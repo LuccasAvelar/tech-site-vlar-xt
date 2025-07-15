@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -22,8 +21,8 @@ export default function LoginPage() {
   const router = useRouter()
 
   const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
+    email: "luccasvelar@gmail.com",
+    password: "admin123",
   })
 
   // Redirecionar se já estiver logado
@@ -80,7 +79,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@techstore.com"
+                    placeholder="luccasvelar@gmail.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     className="pl-10 bg-gray-700 border-gray-600 text-white"
@@ -98,7 +97,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Sua senha"
+                    placeholder="admin123"
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                     className="pl-10 pr-10 bg-gray-700 border-gray-600 text-white"
@@ -125,10 +124,16 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="mt-4 text-center text-sm text-gray-400">
-              <p>Credenciais padrão:</p>
-              <p>Email: admin@techstore.com</p>
-              <p>Senha: admin123</p>
+            <div className="mt-6 p-4 bg-gray-700/50 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-300 mb-2">Credenciais de Acesso:</h3>
+              <div className="text-sm text-gray-400 space-y-1">
+                <p>
+                  <strong>Email:</strong> luccasvelar@gmail.com
+                </p>
+                <p>
+                  <strong>Senha:</strong> admin123
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -59,7 +59,7 @@ export default function AdminPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center">
-        <div className="text-white">Carregando...</div>
+        <div className="text-white text-xl">Carregando...</div>
       </div>
     )
   }
@@ -73,7 +73,10 @@ export default function AdminPage() {
       <div className="container mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-3xl font-bold text-white">Painel Administrativo</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Painel Administrativo</h1>
+              <p className="text-gray-400 mt-2">Bem-vindo, {user?.name}</p>
+            </div>
             <Button
               onClick={handleLogout}
               variant="outline"

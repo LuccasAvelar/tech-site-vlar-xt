@@ -1,26 +1,36 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Search, Eye } from "lucide-react"
+import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+
+interface OrderItem {
+  productId: string
+  productName: string
+  quantity: number
+  price: number
+}
 
 interface Order {
   id: string
-  products: any[]
+  customerName: string
+  customerEmail: string
   total: number
-  payment_method: string
-  installments: string
-  address: string
-  coupon_code?: string
   status: string
-  created_at: string
+  items: OrderItem[]
+  createdAt: string
 }
 
 export default function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     fetchOrders()
@@ -30,133 +40,162 @@ export default function OrderManagement() {
     try {
       setIsLoading(true)
       const response = await fetch("/api/orders")
-      const data = await response.json()
-      setOrders(Array.isArray(data) ? data : [])
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(Array.isArray(data) ? data : [])
+      }
     } catch (error) {
-      console.error("Erro ao carregar pedidos:", error)
-      setOrders([])
+      console.error("Erro ao buscar pedidos:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-500"
-      case "confirmed":
-        return "bg-blue-500"
-      case "delivered":
-        return "bg-green-500"
-      case "cancelled":
-        return "bg-red-500"
-      default:
-        return "bg-gray-500"
+  const getStatusBadge = (status: string) => {
+    const statusMap = {
+      pending: { label: "Pendente", variant: "secondary" as const },
+      processing: { label: "Processando", variant: "default" as const },
+      completed: { label: "Concluído", variant: "default" as const },
+      cancelled: { label: "Cancelado", variant: "destructive" as const },
     }
+
+    const statusInfo = statusMap[status as keyof typeof statusMap] || { label: status, variant: "secondary" as const }
+
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "Pendente"
-      case "confirmed":
-        return "Confirmado"
-      case "delivered":
-        return "Entregue"
-      case "cancelled":
-        return "Cancelado"
-      default:
-        return status
-    }
-  }
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   if (isLoading) {
-    return <div className="text-white">Carregando pedidos...</div>
+    return (
+      <Card className="bg-gray-800/50 border-gray-700">
+        <CardContent className="p-6">
+          <div className="text-center text-gray-400">Carregando pedidos...</div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Gerenciar Pedidos</h2>
+    <Card className="bg-gray-800/50 border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-white">Gerenciar Pedidos</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Buscar pedidos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-700 border-gray-600 text-white"
+            />
+          </div>
+        </div>
 
-      <div className="space-y-4">
-        {orders.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">Nenhum pedido encontrado.</div>
-        ) : (
-          orders.map((order) => (
-            <Card key={order.id} className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-white">Pedido #{order.id.slice(-8)}</CardTitle>
-                  <Badge className={getStatusColor(order.status)}>{getStatusText(order.status)}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-gray-400 text-sm">Total:</span>
-                    <p className="text-cyan-400 font-semibold text-lg">R$ {order.total.toFixed(2)}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 text-sm">Pagamento:</span>
-                    <p className="text-white">{order.payment_method}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-400 text-sm">Parcelas:</span>
-                    <p className="text-white">{order.installments}</p>
-                  </div>
-                </div>
+        <div className="rounded-md border border-gray-700">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-700">
+                <TableHead className="text-gray-300">ID</TableHead>
+                <TableHead className="text-gray-300">Cliente</TableHead>
+                <TableHead className="text-gray-300">Email</TableHead>
+                <TableHead className="text-gray-300">Total</TableHead>
+                <TableHead className="text-gray-300">Status</TableHead>
+                <TableHead className="text-gray-300">Data</TableHead>
+                <TableHead className="text-gray-300">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredOrders.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                    Nenhum pedido encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredOrders.map((order) => (
+                  <TableRow key={order.id} className="border-gray-700">
+                    <TableCell className="text-white font-medium">#{order.id}</TableCell>
+                    <TableCell className="text-gray-300">{order.customerName}</TableCell>
+                    <TableCell className="text-gray-300">{order.customerEmail}</TableCell>
+                    <TableCell className="text-gray-300">R$ {order.total.toFixed(2)}</TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell className="text-gray-300">
+                      {new Date(order.createdAt).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedOrder(order)}
+                            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Detalhes do Pedido #{order.id}</DialogTitle>
+                          </DialogHeader>
+                          {selectedOrder && (
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="font-medium text-gray-300">Cliente</h4>
+                                  <p className="text-white">{selectedOrder.customerName}</p>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-300">Email</h4>
+                                  <p className="text-white">{selectedOrder.customerEmail}</p>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-300">Status</h4>
+                                  {getStatusBadge(selectedOrder.status)}
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-300">Total</h4>
+                                  <p className="text-white font-bold">R$ {selectedOrder.total.toFixed(2)}</p>
+                                </div>
+                              </div>
 
-                <div>
-                  <span className="text-gray-400 text-sm">Endereço:</span>
-                  <p className="text-white">{order.address}</p>
-                </div>
-
-                {order.coupon_code && (
-                  <div>
-                    <span className="text-gray-400 text-sm">Cupom:</span>
-                    <p className="text-green-400">{order.coupon_code}</p>
-                  </div>
-                )}
-
-                <div>
-                  <span className="text-gray-400 text-sm">Data:</span>
-                  <p className="text-white">{new Date(order.created_at).toLocaleString("pt-BR")}</p>
-                </div>
-
-                <div>
-                  <span className="text-gray-400 text-sm">Produtos:</span>
-                  <div className="mt-2 space-y-2">
-                    {Array.isArray(order.products) ? (
-                      order.products.map((product: any, index: number) => (
-                        <div key={index} className="bg-gray-700/50 p-3 rounded flex justify-between items-center">
-                          <div>
-                            <p className="text-white font-medium">{product.name}</p>
-                            <p className="text-gray-400 text-sm">Quantidade: {product.quantity}</p>
-                          </div>
-                          <p className="text-cyan-400">R$ {(product.price * product.quantity).toFixed(2)}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-400">Produtos não disponíveis</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Detalhes
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
+                              <div>
+                                <h4 className="font-medium text-gray-300 mb-2">Itens do Pedido</h4>
+                                <div className="space-y-2">
+                                  {selectedOrder.items.map((item, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex justify-between items-center p-2 bg-gray-700/50 rounded"
+                                    >
+                                      <div>
+                                        <p className="text-white">{item.productName}</p>
+                                        <p className="text-gray-400 text-sm">Quantidade: {item.quantity}</p>
+                                      </div>
+                                      <p className="text-white font-medium">R$ {item.price.toFixed(2)}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
