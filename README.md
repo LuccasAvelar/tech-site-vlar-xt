@@ -1,180 +1,102 @@
-# TechStore - E-commerce Admin
+# TechStore Admin
 
-Sistema de e-commerce com painel administrativo desenvolvido em Next.js 14, TypeScript e Tailwind CSS.
+Sistema de administração para loja de tecnologia.
 
-## 🚀 Características
+## 🚀 Funcionalidades
 
-- ✅ **Autenticação Simples**: Sistema de login baseado em variáveis de ambiente (sem JWT)
-- ✅ **Painel Admin**: Gerenciamento completo de produtos e pedidos
-- ✅ **Design Responsivo**: Interface moderna e futurista
-- ✅ **Banco PostgreSQL**: Integração com Neon Database
-- ✅ **TypeScript**: Tipagem completa para maior segurança
-- ✅ **Tailwind CSS**: Estilização moderna e responsiva
+- ✅ Sistema de login seguro
+- ✅ Dashboard com estatísticas
+- ✅ Gerenciamento completo de produtos (CRUD)
+- ✅ Visualização e gerenciamento de pedidos
+- ✅ Interface responsiva e moderna
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Radix UI, Framer Motion
-- **Database**: PostgreSQL (Neon Database)
-- **Authentication**: Cookie-based session (sem JWT)
+- **Next.js 14** - Framework React
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização
+- **Radix UI** - Componentes acessíveis
+- **Lucide React** - Ícones
 
-## ⚡ Instalação Rápida
+## ⚙️ Configuração
 
-### 1. Clone e instale dependências
+### 1. Variáveis de Ambiente
+
+Crie um arquivo `.env.local` com:
+
+\`\`\`env
+ADMIN_EMAIL=luccasvelar@gmail.com
+ADMIN_PASSWORD=admin123
+NODE_ENV=production
+\`\`\`
+
+### 2. Instalação
+
 \`\`\`bash
-git clone <seu-repositorio>
-cd techstore
 npm install
 \`\`\`
 
-### 2. Configure variáveis de ambiente
-Crie um arquivo `.env` baseado no `.env.example`:
+### 3. Desenvolvimento
 
-\`\`\`env
-# Database (obrigatório)
-DATABASE_URL="postgresql://username:password@hostname:5432/database_name"
-
-# Admin Authentication (obrigatório)
-ADMIN_EMAIL="admin@techstore.com"
-ADMIN_PASSWORD="admin123"
-
-# Opcionais
-EMAIL_USER="your-email@gmail.com"
-EMAIL_PASS="your-app-password"
-NEXT_PUBLIC_WHATSAPP_NUMBER="5511999999999"
-\`\`\`
-
-### 3. Configure o banco de dados
-\`\`\`bash
-npm run init-db
-\`\`\`
-
-### 4. Execute o projeto
 \`\`\`bash
 npm run dev
 \`\`\`
 
-## 🔐 Acesso Admin
+### 4. Build para Produção
 
-1. Acesse: `http://localhost:3000/login`
-2. Use as credenciais configuradas no `.env`:
-   - **Email**: valor de `ADMIN_EMAIL`
-   - **Senha**: valor de `ADMIN_PASSWORD`
+\`\`\`bash
+npm run build
+npm start
+\`\`\`
+
+## 🔐 Acesso
+
+### Login Admin
+- **URL:** `/login`
+- **Email:** `luccasvelar@gmail.com`
+- **Senha:** `admin123`
+
+### Painel Admin
+- **URL:** `/admin` (após login)
+- Dashboard com estatísticas
+- Gerenciamento de produtos
+- Visualização de pedidos
 
 ## 📁 Estrutura do Projeto
 
 \`\`\`
 ├── app/
-│   ├── admin/              # Painel administrativo
-│   ├── api/               # API Routes
-│   │   ├── auth/          # Autenticação
-│   │   ├── products/      # CRUD de produtos
-│   │   └── orders/        # Gerenciamento de pedidos
-│   ├── login/             # Página de login
-│   └── page.tsx           # Página inicial
+│   ├── admin/          # Painel administrativo
+│   ├── api/            # APIs do backend
+│   ├── login/          # Página de login
+│   └── layout.tsx      # Layout principal
 ├── components/
-│   ├── admin/             # Componentes do admin
-│   └── ui/                # Componentes base (shadcn/ui)
-├── hooks/
-│   └── use-auth.tsx       # Hook de autenticação
-├── lib/
-│   └── db.ts              # Configuração do banco
-└── scripts/
-    └── init-db.ts         # Script de inicialização
-\`\`\`
-
-## 🗄️ Banco de Dados
-
-### Tabelas Principais
-
-**products**
-- `id` (UUID, PK)
-- `name` (VARCHAR)
-- `description` (TEXT)
-- `price` (DECIMAL)
-- `category` (VARCHAR)
-- `stock` (INTEGER)
-- `image` (TEXT)
-- `is_active` (BOOLEAN)
-- `created_at`, `updated_at` (TIMESTAMP)
-
-**orders**
-- `id` (UUID, PK)
-- `products` (JSONB)
-- `total` (DECIMAL)
-- `payment_method` (VARCHAR)
-- `installments` (VARCHAR)
-- `address` (TEXT)
-- `coupon_code` (VARCHAR)
-- `status` (VARCHAR)
-- `created_at`, `updated_at` (TIMESTAMP)
-
-## 🔧 Scripts Disponíveis
-
-\`\`\`bash
-npm run dev          # Servidor de desenvolvimento
-npm run build        # Build para produção
-npm run start        # Servidor de produção
-npm run lint         # Verificar código
-npm run init-db      # Inicializar banco de dados
-\`\`\`
-
-## 🌐 Deploy
-
-### Vercel (Recomendado)
-
-1. Conecte seu repositório no Vercel
-2. Configure as variáveis de ambiente
-3. Deploy automático
-
-### Variáveis de Ambiente para Produção
-
-\`\`\`env
-DATABASE_URL="sua-string-de-conexao-postgresql"
-ADMIN_EMAIL="seu-email-admin"
-ADMIN_PASSWORD="sua-senha-segura"
+│   ├── admin/          # Componentes do admin
+│   └── ui/             # Componentes base
+├── hooks/              # Hooks customizados
+├── lib/                # Utilitários e database mock
+└── middleware.ts       # Middleware de autenticação
 \`\`\`
 
 ## 🔒 Segurança
 
-- ✅ Autenticação baseada em cookies HTTP-only
-- ✅ Middleware para proteção de rotas admin
-- ✅ Validação de dados nas APIs
-- ✅ Sanitização de inputs
-- ✅ CORS configurado adequadamente
+- Autenticação via cookies HTTP-only
+- Middleware para proteção de rotas
+- Validação de credenciais no servidor
+- Sessões com expiração automática
 
-## 🐛 Solução de Problemas
+## 📊 Dados
 
-### Erro de conexão com banco
-\`\`\`bash
-# Verifique se a DATABASE_URL está correta
-echo $DATABASE_URL
+O sistema utiliza dados mock em memória para demonstração. Em produção, substitua por um banco de dados real.
 
-# Teste a conexão
-npm run init-db
-\`\`\`
+## 🚀 Deploy
 
-### Erro de autenticação
-\`\`\`bash
-# Verifique se as variáveis estão definidas
-echo $ADMIN_EMAIL
-echo $ADMIN_PASSWORD
-\`\`\`
+O projeto está otimizado para deploy na Vercel:
 
-### Produtos não aparecem
-\`\`\`bash
-# Execute novamente a inicialização
-npm run init-db
-\`\`\`
+1. Configure as variáveis de ambiente no dashboard da Vercel
+2. Conecte o repositório
+3. Deploy automático
 
-## 📞 Suporte
+## 📝 Licença
 
-Para dúvidas ou problemas:
-1. Verifique os logs do console
-2. Confirme as variáveis de ambiente
-3. Execute `npm run init-db` novamente
-
----
-
-**Desenvolvido com ❤️ usando Next.js 14 e TypeScript**
-\`\`\`
+Este projeto é para fins educacionais e demonstração.

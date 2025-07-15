@@ -1,201 +1,187 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Eye } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ShoppingCart, User, CreditCard, Calendar } from "lucide-react"
+import type { Order } from "@/lib/db"
 
-interface OrderItem {
-  productId: string
-  productName: string
-  quantity: number
-  price: number
-}
-
-interface Order {
-  id: string
-  customerName: string
-  customerEmail: string
-  total: number
-  status: string
-  items: OrderItem[]
-  createdAt: string
-}
-
-export default function OrderManagement() {
+export function OrderManagement() {
   const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchOrders()
+    loadOrders()
   }, [])
 
-  const fetchOrders = async () => {
+  const loadOrders = async () => {
     try {
-      setIsLoading(true)
       const response = await fetch("/api/orders")
       if (response.ok) {
         const data = await response.json()
-        setOrders(Array.isArray(data) ? data : [])
+        setOrders(data)
       }
     } catch (error) {
-      console.error("Erro ao buscar pedidos:", error)
+      console.error("Erro ao carregar pedidos:", error)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      pending: { label: "Pendente", variant: "secondary" as const },
-      processing: { label: "Processando", variant: "default" as const },
-      completed: { label: "Concluído", variant: "default" as const },
-      cancelled: { label: "Cancelado", variant: "destructive" as const },
+  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        await loadOrders()
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar status do pedido:", error)
     }
-
-    const statusInfo = statusMap[status as keyof typeof statusMap] || { label: status, variant: "secondary" as const }
-
-    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
   }
 
-  const filteredOrders = orders.filter(
-    (order) =>
-      order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const getStatusColor = (status: Order["status"]) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      case "processing":
+        return "bg-blue-100 text-blue-800"
+      case "completed":
+        return "bg-green-100 text-green-800"
+      case "cancelled":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
 
-  if (isLoading) {
+  const getStatusLabel = (status: Order["status"]) => {
+    switch (status) {
+      case "pending":
+        return "Pendente"
+      case "processing":
+        return "Processando"
+      case "completed":
+        return "Concluído"
+      case "cancelled":
+        return "Cancelado"
+      default:
+        return status
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString("pt-BR")
+  }
+
+  if (loading) {
     return (
-      <Card className="bg-gray-800/50 border-gray-700">
-        <CardContent className="p-6">
-          <div className="text-center text-gray-400">Carregando pedidos...</div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
     )
   }
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white">Gerenciar Pedidos</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar pedidos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-gray-700 border-gray-600 text-white"
-            />
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Gerenciamento de Pedidos</h2>
+        <p className="text-gray-600">Visualize e gerencie todos os pedidos da loja</p>
+      </div>
 
-        <div className="rounded-md border border-gray-700">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-700">
-                <TableHead className="text-gray-300">ID</TableHead>
-                <TableHead className="text-gray-300">Cliente</TableHead>
-                <TableHead className="text-gray-300">Email</TableHead>
-                <TableHead className="text-gray-300">Total</TableHead>
-                <TableHead className="text-gray-300">Status</TableHead>
-                <TableHead className="text-gray-300">Data</TableHead>
-                <TableHead className="text-gray-300">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-400 py-8">
-                    Nenhum pedido encontrado
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order.id} className="border-gray-700">
-                    <TableCell className="text-white font-medium">#{order.id}</TableCell>
-                    <TableCell className="text-gray-300">{order.customerName}</TableCell>
-                    <TableCell className="text-gray-300">{order.customerEmail}</TableCell>
-                    <TableCell className="text-gray-300">R$ {order.total.toFixed(2)}</TableCell>
-                    <TableCell>{getStatusBadge(order.status)}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {new Date(order.createdAt).toLocaleDateString("pt-BR")}
-                    </TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedOrder(order)}
-                            className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Detalhes do Pedido #{order.id}</DialogTitle>
-                          </DialogHeader>
-                          {selectedOrder && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium text-gray-300">Cliente</h4>
-                                  <p className="text-white">{selectedOrder.customerName}</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-300">Email</h4>
-                                  <p className="text-white">{selectedOrder.customerEmail}</p>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-300">Status</h4>
-                                  {getStatusBadge(selectedOrder.status)}
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-300">Total</h4>
-                                  <p className="text-white font-bold">R$ {selectedOrder.total.toFixed(2)}</p>
-                                </div>
-                              </div>
+      <div className="space-y-4">
+        {orders.map((order) => (
+          <Card key={order.id}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    Pedido #{order.id}
+                  </CardTitle>
+                  <CardDescription className="flex items-center gap-4 mt-2">
+                    <span className="flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      {order.customerName}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CreditCard className="w-4 h-4" />
+                      {order.paymentMethod}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {formatDate(order.createdAt)}
+                    </span>
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={getStatusColor(order.status)}>{getStatusLabel(order.status)}</Badge>
+                  <Select
+                    value={order.status}
+                    onValueChange={(value: Order["status"]) => updateOrderStatus(order.id, value)}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="processing">Processando</SelectItem>
+                      <SelectItem value="completed">Concluído</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium mb-2">Itens do Pedido:</h4>
+                  <div className="space-y-2">
+                    {order.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <div>
+                          <span className="font-medium">{item.productName}</span>
+                          <span className="text-gray-600 ml-2">x{item.quantity}</span>
+                        </div>
+                        <span className="font-medium">
+                          R$ {(item.price * item.quantity).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="text-sm text-gray-600">
+                    <p>Cliente: {order.customerEmail}</p>
+                    <p>Atualizado: {formatDate(order.updatedAt)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold">
+                      Total: R$ {order.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-                              <div>
-                                <h4 className="font-medium text-gray-300 mb-2">Itens do Pedido</h4>
-                                <div className="space-y-2">
-                                  {selectedOrder.items.map((item, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex justify-between items-center p-2 bg-gray-700/50 rounded"
-                                    >
-                                      <div>
-                                        <p className="text-white">{item.productName}</p>
-                                        <p className="text-gray-400 text-sm">Quantidade: {item.quantity}</p>
-                                      </div>
-                                      <p className="text-white font-medium">R$ {item.price.toFixed(2)}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+      {orders.length === 0 && (
+        <div className="text-center py-12">
+          <ShoppingCart className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum pedido encontrado</h3>
+          <p className="text-gray-600">Os pedidos aparecerão aqui quando forem realizados.</p>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
