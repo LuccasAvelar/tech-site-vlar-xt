@@ -1,20 +1,27 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import type { User } from "@/types"
+
+interface User {
+  id: string
+  name: string
+  email: string
+  isAdmin: boolean
+}
 
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
-  register: (userData: any) => Promise<void>
   logout: () => void
   isAdmin: boolean
+  isLoading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     checkAuth()
@@ -25,12 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/api/auth/me", {
         credentials: "include",
       })
+
       if (response.ok) {
         const userData = await response.json()
         setUser(userData)
+      } else {
+        setUser(null)
       }
     } catch (error) {
       console.error("Erro ao verificar autenticação:", error)
+      setUser(null)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -43,35 +56,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
 
     if (!response.ok) {
-      throw new Error("Credenciais inválidas")
+      const error = await response.json()
+      throw new Error(error.error || "Credenciais inválidas")
     }
 
-    const userData = await response.json()
-    setUser(userData)
-  }
-
-  const register = async (userData: any) => {
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-      credentials: "include",
-    })
-
-    if (!response.ok) {
-      throw new Error("Erro ao criar conta")
-    }
-
-    const newUser = await response.json()
-    setUser(newUser)
+    const data = await response.json()
+    setUser(data.user)
   }
 
   const logout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    })
-    setUser(null)
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
+    } catch (error) {
+      console.error("Erro no logout:", error)
+    } finally {
+      setUser(null)
+    }
   }
 
   return (
@@ -79,9 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         login,
-        register,
         logout,
         isAdmin: user?.isAdmin || false,
+        isLoading,
       }}
     >
       {children}

@@ -1,127 +1,180 @@
-# TechStore - E-commerce de Tecnologia
+# TechStore - E-commerce Admin
 
-Sistema completo de e-commerce desenvolvido com Next.js 14, focado em produtos de tecnologia.
+Sistema de e-commerce com painel administrativo desenvolvido em Next.js 14, TypeScript e Tailwind CSS.
 
-## 🚀 Funcionalidades
+## 🚀 Características
 
-- ✅ Catálogo de produtos com filtros
-- ✅ Carrinho de compras
-- ✅ Sistema de autenticação
-- ✅ Painel administrativo completo
-- ✅ Gerenciamento de pedidos
-- ✅ Sistema de cupons
-- ✅ Integração com WhatsApp
-- ✅ Design responsivo e moderno
+- ✅ **Autenticação Simples**: Sistema de login baseado em variáveis de ambiente (sem JWT)
+- ✅ **Painel Admin**: Gerenciamento completo de produtos e pedidos
+- ✅ **Design Responsivo**: Interface moderna e futurista
+- ✅ **Banco PostgreSQL**: Integração com Neon Database
+- ✅ **TypeScript**: Tipagem completa para maior segurança
+- ✅ **Tailwind CSS**: Estilização moderna e responsiva
 
 ## 🛠️ Tecnologias
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes
-- **Banco de dados**: PostgreSQL (Neon)
-- **Autenticação**: JWT + Cookies
-- **UI**: shadcn/ui + Radix UI
-- **Animações**: Framer Motion
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Radix UI, Framer Motion
+- **Database**: PostgreSQL (Neon Database)
+- **Authentication**: Cookie-based session (sem JWT)
 
-## 📦 Instalação
+## ⚡ Instalação Rápida
 
-1. Clone o repositório:
+### 1. Clone e instale dependências
 \`\`\`bash
-git clone <repository-url>
+git clone <seu-repositorio>
 cd techstore
-\`\`\`
-
-2. Instale as dependências:
-\`\`\`bash
 npm install
 \`\`\`
 
-3. Configure as variáveis de ambiente:
-\`\`\`bash
-cp .env.example .env.local
-\`\`\`
+### 2. Configure variáveis de ambiente
+Crie um arquivo `.env` baseado no `.env.example`:
 
-Edite o arquivo `.env.local` com suas configurações:
 \`\`\`env
+# Database (obrigatório)
 DATABASE_URL="postgresql://username:password@hostname:5432/database_name"
-JWT_SECRET="your-super-secret-jwt-key-here"
-EMAIL_USER="your-email@gmail.com" # Opcional
-EMAIL_PASS="your-app-password" # Opcional
-NEXT_PUBLIC_WHATSAPP_NUMBER="5511999999999" # Opcional
+
+# Admin Authentication (obrigatório)
+ADMIN_EMAIL="admin@techstore.com"
+ADMIN_PASSWORD="admin123"
+
+# Opcionais
+EMAIL_USER="your-email@gmail.com"
+EMAIL_PASS="your-app-password"
+NEXT_PUBLIC_WHATSAPP_NUMBER="5511999999999"
 \`\`\`
 
-4. Inicialize o banco de dados:
+### 3. Configure o banco de dados
 \`\`\`bash
 npm run init-db
 \`\`\`
 
-5. Execute o projeto:
+### 4. Execute o projeto
 \`\`\`bash
 npm run dev
 \`\`\`
 
-## 🔐 Acesso Administrativo
+## 🔐 Acesso Admin
 
-Após inicializar o banco, use as credenciais:
-- **Email**: admin@techstore.com
-- **Senha**: admin123
+1. Acesse: `http://localhost:3000/login`
+2. Use as credenciais configuradas no `.env`:
+   - **Email**: valor de `ADMIN_EMAIL`
+   - **Senha**: valor de `ADMIN_PASSWORD`
 
 ## 📁 Estrutura do Projeto
 
 \`\`\`
-├── app/                    # App Router do Next.js
-│   ├── admin/             # Painel administrativo
+├── app/
+│   ├── admin/              # Painel administrativo
 │   ├── api/               # API Routes
-│   ├── carrinho/          # Página do carrinho
-│   ├── contato/           # Página de contato
-│   └── login/             # Página de login
-├── components/            # Componentes React
+│   │   ├── auth/          # Autenticação
+│   │   ├── products/      # CRUD de produtos
+│   │   └── orders/        # Gerenciamento de pedidos
+│   ├── login/             # Página de login
+│   └── page.tsx           # Página inicial
+├── components/
 │   ├── admin/             # Componentes do admin
-│   └── ui/                # Componentes base (shadcn)
-├── hooks/                 # Custom hooks
-├── lib/                   # Utilitários e configurações
-├── scripts/               # Scripts de setup
-└── types/                 # Definições TypeScript
+│   └── ui/                # Componentes base (shadcn/ui)
+├── hooks/
+│   └── use-auth.tsx       # Hook de autenticação
+├── lib/
+│   └── db.ts              # Configuração do banco
+└── scripts/
+    └── init-db.ts         # Script de inicialização
 \`\`\`
 
 ## 🗄️ Banco de Dados
 
-O sistema utiliza PostgreSQL com as seguintes tabelas:
-- `users` - Usuários do sistema
-- `products` - Catálogo de produtos
-- `orders` - Pedidos realizados
-- `order_items` - Itens dos pedidos
-- `coupons` - Cupons de desconto
+### Tabelas Principais
 
-## 🚀 Deploy
+**products**
+- `id` (UUID, PK)
+- `name` (VARCHAR)
+- `description` (TEXT)
+- `price` (DECIMAL)
+- `category` (VARCHAR)
+- `stock` (INTEGER)
+- `image` (TEXT)
+- `is_active` (BOOLEAN)
+- `created_at`, `updated_at` (TIMESTAMP)
 
-1. Configure as variáveis de ambiente na plataforma de deploy
-2. Execute o build:
+**orders**
+- `id` (UUID, PK)
+- `products` (JSONB)
+- `total` (DECIMAL)
+- `payment_method` (VARCHAR)
+- `installments` (VARCHAR)
+- `address` (TEXT)
+- `coupon_code` (VARCHAR)
+- `status` (VARCHAR)
+- `created_at`, `updated_at` (TIMESTAMP)
+
+## 🔧 Scripts Disponíveis
+
 \`\`\`bash
-npm run build
+npm run dev          # Servidor de desenvolvimento
+npm run build        # Build para produção
+npm run start        # Servidor de produção
+npm run lint         # Verificar código
+npm run init-db      # Inicializar banco de dados
 \`\`\`
-3. Inicie a aplicação:
+
+## 🌐 Deploy
+
+### Vercel (Recomendado)
+
+1. Conecte seu repositório no Vercel
+2. Configure as variáveis de ambiente
+3. Deploy automático
+
+### Variáveis de Ambiente para Produção
+
+\`\`\`env
+DATABASE_URL="sua-string-de-conexao-postgresql"
+ADMIN_EMAIL="seu-email-admin"
+ADMIN_PASSWORD="sua-senha-segura"
+\`\`\`
+
+## 🔒 Segurança
+
+- ✅ Autenticação baseada em cookies HTTP-only
+- ✅ Middleware para proteção de rotas admin
+- ✅ Validação de dados nas APIs
+- ✅ Sanitização de inputs
+- ✅ CORS configurado adequadamente
+
+## 🐛 Solução de Problemas
+
+### Erro de conexão com banco
 \`\`\`bash
-npm start
+# Verifique se a DATABASE_URL está correta
+echo $DATABASE_URL
+
+# Teste a conexão
+npm run init-db
 \`\`\`
 
-## 📧 Configuração de Email (Opcional)
+### Erro de autenticação
+\`\`\`bash
+# Verifique se as variáveis estão definidas
+echo $ADMIN_EMAIL
+echo $ADMIN_PASSWORD
+\`\`\`
 
-Para receber notificações de pedidos por email, configure:
-1. `EMAIL_USER` - Seu email Gmail
-2. `EMAIL_PASS` - Senha de app do Gmail
+### Produtos não aparecem
+\`\`\`bash
+# Execute novamente a inicialização
+npm run init-db
+\`\`\`
 
-## 📱 WhatsApp (Opcional)
+## 📞 Suporte
 
-Configure `NEXT_PUBLIC_WHATSAPP_NUMBER` com seu número no formato internacional.
+Para dúvidas ou problemas:
+1. Verifique os logs do console
+2. Confirme as variáveis de ambiente
+3. Execute `npm run init-db` novamente
 
-## 🤝 Contribuição
+---
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT.
+**Desenvolvido com ❤️ usando Next.js 14 e TypeScript**
+\`\`\`

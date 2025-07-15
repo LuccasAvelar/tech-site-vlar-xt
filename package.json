@@ -1,16 +1,16 @@
 {
-  "name": "my-v0-project",
+  "name": "techstore",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "init-db": "tsx scripts/init-db.ts",
     "lint": "next lint",
     "start": "next start"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
-    "@hookform/resolvers": "^3.9.1",
     "@neondatabase/serverless": "latest",
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
@@ -39,12 +39,10 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
-    "autoprefixer": "^10.4.20",
     "bcryptjs": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "latest",
-    "date-fns": "4.1.0",
     "embla-carousel-react": "latest",
     "framer-motion": "latest",
     "input-otp": "latest",
@@ -52,7 +50,7 @@
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "latest",
-    "nodemailer": "latest",
+    "nodemailer": "^6.9.7",
     "react": "^18",
     "react-day-picker": "latest",
     "react-dom": "^18",
@@ -62,15 +60,20 @@
     "sonner": "latest",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "latest",
-    "zod": "^3.24.1"
+    "vaul": "latest"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",
+    "@types/nodemailer": "^6.4.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.3",
     "postcss": "^8.5",
-    "tailwindcss": "^3.4.17",
+    "tailwindcss": "^3.3.0",
+    "tsx": "^4.6.0",
     "typescript": "^5"
   }
 }

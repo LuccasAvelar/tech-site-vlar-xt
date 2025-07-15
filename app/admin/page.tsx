@@ -2,35 +2,34 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Package, Users, ShoppingCart, Settings } from "lucide-react"
+import { Package, Users, ShoppingCart, Settings, LogOut } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import Header from "@/components/header"
 import ProductManagement from "@/components/admin/product-management"
 import OrderManagement from "@/components/admin/order-management"
-import UserManagement from "@/components/admin/user-management"
-import CouponManagement from "@/components/admin/coupon-management"
-import WebhookManagement from "@/components/admin/webhook-management"
 
 export default function AdminPage() {
-  const { user, isAdmin } = useAuth()
+  const { user, isAdmin, logout, isLoading } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState({
     totalProducts: 0,
-    totalUsers: 0,
+    totalUsers: 1,
     totalOrders: 0,
     totalRevenue: 0,
   })
 
   useEffect(() => {
-    if (!isAdmin) {
-      router.push("/")
+    if (!isLoading && !isAdmin) {
+      router.push("/login")
       return
     }
-    fetchStats()
-  }, [isAdmin, router])
+    if (isAdmin) {
+      fetchStats()
+    }
+  }, [isAdmin, isLoading, router])
 
   const fetchStats = async () => {
     try {
@@ -40,14 +39,29 @@ export default function AdminPage() {
       const orders = await ordersRes.json()
 
       setStats({
-        totalProducts: products.length,
+        totalProducts: Array.isArray(products) ? products.length : 0,
         totalUsers: 1,
-        totalOrders: orders.length,
-        totalRevenue: orders.reduce((sum: number, order: any) => sum + order.total, 0),
+        totalOrders: Array.isArray(orders) ? orders.length : 0,
+        totalRevenue: Array.isArray(orders)
+          ? orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0)
+          : 0,
       })
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error)
     }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/login")
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center">
+        <div className="text-white">Carregando...</div>
+      </div>
+    )
   }
 
   if (!isAdmin) {
@@ -56,11 +70,19 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
-      <Header />
-
       <div className="container mx-auto px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <h1 className="text-3xl font-bold text-white mb-8">Painel Administrativo</h1>
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-white">Painel Administrativo</h1>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-700 bg-transparent"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          </div>
 
           {/* Estatísticas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -107,21 +129,12 @@ export default function AdminPage() {
 
           {/* Tabs de Gerenciamento */}
           <Tabs defaultValue="products" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-gray-800">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-800">
               <TabsTrigger value="products" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
                 Produtos
               </TabsTrigger>
               <TabsTrigger value="orders" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
                 Pedidos
-              </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
-                Usuários
-              </TabsTrigger>
-              <TabsTrigger value="coupons" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
-                Cupons
-              </TabsTrigger>
-              <TabsTrigger value="webhooks" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">
-                Automações
               </TabsTrigger>
             </TabsList>
 
@@ -131,18 +144,6 @@ export default function AdminPage() {
 
             <TabsContent value="orders" className="mt-6">
               <OrderManagement />
-            </TabsContent>
-
-            <TabsContent value="users" className="mt-6">
-              <UserManagement />
-            </TabsContent>
-
-            <TabsContent value="coupons" className="mt-6">
-              <CouponManagement />
-            </TabsContent>
-
-            <TabsContent value="webhooks" className="mt-6">
-              <WebhookManagement />
             </TabsContent>
           </Tabs>
         </motion.div>

@@ -2,10 +2,13 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 
 export async function POST() {
-  const cookieStore = cookies()
+  try {
+    const cookieStore = cookies()
+    cookieStore.delete("admin-session")
 
-  cookieStore.delete("auth-token")
-  cookieStore.delete("fingerprint")
-
-  return NextResponse.json({ message: "Logout realizado com sucesso" })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Erro no logout:", error)
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
 }
