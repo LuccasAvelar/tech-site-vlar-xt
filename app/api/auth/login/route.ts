@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,34 +8,25 @@ export async function POST(req: NextRequest) {
     const adminPassword = process.env.ADMIN_PASSWORD
 
     if (!adminEmail || !adminPassword) {
-      console.error("ADMIN_EMAIL ou ADMIN_PASSWORD não configurados")
       return NextResponse.json({ error: "Configuração do servidor incompleta" }, { status: 500 })
     }
 
     if (email === adminEmail && password === adminPassword) {
-      // Definir cookie de sessão
-      const cookieStore = cookies()
-      cookieStore.set("admin-session", "authenticated", {
+      const response = NextResponse.json({ success: true })
+
+      // Set simple auth cookie
+      response.cookies.set("admin-auth", "authenticated", {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 24 * 60 * 60, // 24 horas
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24, // 24 hours
       })
 
-      return NextResponse.json({
-        success: true,
-        user: {
-          id: "admin",
-          name: "Administrador",
-          email: adminEmail,
-          isAdmin: true,
-        },
-      })
+      return response
     }
 
     return NextResponse.json({ error: "Credenciais inválidas" }, { status: 401 })
   } catch (error) {
-    console.error("Erro no login:", error)
     return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
 }

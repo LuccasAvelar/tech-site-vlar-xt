@@ -1,27 +1,27 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import type React from "react"
+
+import { createContext, useContext, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 
 interface User {
-  id: string
-  name: string
   email: string
-  isAdmin: boolean
 }
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string) => Promise<void>
-  logout: () => void
-  isAdmin: boolean
-  isLoading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => Promise<void>
+  loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     checkAuth()
@@ -29,67 +29,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await fetch("/api/auth/me", {
-        credentials: "include",
-      })
-
+      const response = await fetch("/api/auth/me")
       if (response.ok) {
-        const userData = await response.json()
-        setUser(userData)
-      } else {
-        setUser(null)
+        const data = await response.json()
+        if (data.authenticated) {
+          setUser(data.user)
+        }
       }
     } catch (error) {
       console.error("Erro ao verificar autenticação:", error)
-      setUser(null)
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const login = async (email: string, password: string) => {
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-      credentials: "include",
-    })
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || "Credenciais inválidas")
+      if (response.ok) {
+        setUser({ email })
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error("Erro no login:", error)
+      return false
     }
-
-    const data = await response.json()
-    setUser(data.user)
   }
 
   const logout = async () => {
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      })
+      await fetch("/api/auth/logout", { method: "POST" })
+      setUser(null)
+      router.push("/login")
     } catch (error) {
       console.error("Erro no logout:", error)
-    } finally {
-      setUser(null)
     }
   }
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        isAdmin: user?.isAdmin || false,
-        isLoading,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

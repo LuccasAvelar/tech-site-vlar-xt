@@ -1,25 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 export async function GET(req: NextRequest) {
-  try {
-    const cookieStore = cookies()
-    const session = cookieStore.get("admin-session")
+  const authCookie = req.cookies.get("admin-auth")
 
-    if (!session || session.value !== "authenticated") {
-      return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
-    }
-
-    const adminEmail = process.env.ADMIN_EMAIL
-
+  if (authCookie?.value === "authenticated") {
     return NextResponse.json({
-      id: "admin",
-      name: "Administrador",
-      email: adminEmail,
-      isAdmin: true,
+      authenticated: true,
+      user: { email: process.env.ADMIN_EMAIL },
     })
-  } catch (error) {
-    console.error("Erro ao verificar autenticação:", error)
-    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
+
+  return NextResponse.json({ authenticated: false }, { status: 401 })
 }

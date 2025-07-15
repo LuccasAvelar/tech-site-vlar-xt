@@ -3,14 +3,12 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
-import { CartProvider } from "@/hooks/use-cart"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "TechStore - Produtos de Tecnologia",
-  description: "Os melhores produtos de tecnologia com os melhores preços",
-    generator: 'v0.dev'
+  title: "TechStore Admin",
+  description: "Painel administrativo da TechStore",
 }
 
 export default function RootLayout({
@@ -21,9 +19,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <AuthProvider>
-          <CartProvider>{children}</CartProvider>
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )
