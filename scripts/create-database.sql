@@ -1,59 +1,87 @@
--- This file would contain SQL commands to create your database schema
--- For example, if using PostgreSQL:
+-- Criação do banco de dados para TechStore
 
--- CREATE TABLE users (
---     id VARCHAR(255) PRIMARY KEY,
---     name VARCHAR(255) NOT NULL,
---     email VARCHAR(255) UNIQUE NOT NULL,
---     password VARCHAR(255) NOT NULL,
---     role VARCHAR(50) DEFAULT 'user'
--- );
+-- Tabela de usuários
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
+    birth_date DATE,
+    avatar TEXT,
+    is_admin BOOLEAN DEFAULT FALSE,
+    needs_password_change BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE products (
---     id VARCHAR(255) PRIMARY KEY,
---     name VARCHAR(255) NOT NULL,
---     description TEXT,
---     price DECIMAL(10, 2) NOT NULL,
---     image VARCHAR(255),
---     category VARCHAR(100),
---     stock INT NOT NULL
--- );
+-- Tabela de produtos
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    image TEXT,
+    category VARCHAR(100),
+    stock INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE orders (
---     id VARCHAR(255) PRIMARY KEY,
---     user_id VARCHAR(255) REFERENCES users(id),
---     total DECIMAL(10, 2) NOT NULL,
---     status VARCHAR(50) DEFAULT 'pending',
---     payment_method VARCHAR(100),
---     installments VARCHAR(10),
---     address TEXT,
---     coupon_code VARCHAR(100),
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
--- );
+-- Tabela de pedidos
+CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    total DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50),
+    installments INTEGER DEFAULT 1,
+    address TEXT,
+    coupon_code VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE order_products (
---     order_id VARCHAR(255) REFERENCES orders(id),
---     product_id VARCHAR(255) REFERENCES products(id),
---     quantity INT NOT NULL,
---     price DECIMAL(10, 2) NOT NULL,
---     PRIMARY KEY (order_id, product_id)
--- );
+-- Tabela de itens do pedido
+CREATE TABLE IF NOT EXISTS order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER REFERENCES orders(id),
+    product_id INTEGER REFERENCES products(id),
+    quantity INTEGER NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE coupons (
---     id VARCHAR(255) PRIMARY KEY,
---     code VARCHAR(100) UNIQUE NOT NULL,
---     discount DECIMAL(5, 2) NOT NULL,
---     type VARCHAR(50) NOT NULL, -- 'percentage' or 'fixed'
---     expires_at TIMESTAMP,
---     is_active BOOLEAN DEFAULT TRUE
--- );
+-- Tabela de cupons
+CREATE TABLE IF NOT EXISTS coupons (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    discount DECIMAL(5,2) NOT NULL,
+    type VARCHAR(20) DEFAULT 'percentage',
+    is_active BOOLEAN DEFAULT TRUE,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- CREATE TABLE webhooks (
---     id VARCHAR(255) PRIMARY KEY,
---     event VARCHAR(100) NOT NULL,
---     url VARCHAR(255) NOT NULL,
---     is_active BOOLEAN DEFAULT TRUE,
---     secret VARCHAR(255)
--- );
+-- Tabela de configurações de webhook
+CREATE TABLE IF NOT EXISTS webhook_configs (
+    id SERIAL PRIMARY KEY,
+    url TEXT NOT NULL,
+    events TEXT[] NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
--- This script is for demonstration. The current project uses a mock in-memory database (lib/db.ts).
+-- Inserir usuário administrador padrão
+INSERT INTO users (name, email, password, phone, birth_date, is_admin, needs_password_change)
+VALUES (
+    'Administrador',
+    'luccasavelar@gmail.com',
+    '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
+    '(11) 99999-9999',
+    '1990-01-01',
+    TRUE,
+    TRUE
+) ON CONFLICT (email) DO NOTHING;

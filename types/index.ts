@@ -1,52 +1,63 @@
-export type Product = {
+export interface Product {
   id: string
   name: string
   description: string
   price: number
-  image: string
+  image?: string
   category: string
   stock: number
+  isActive?: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type User = {
+export interface User {
   id: string
   name: string
   email: string
-  password?: string // Optional for client-side, never send to client
-  role: "user" | "admin"
+  phone: string
+  birthDate: string
   avatar?: string
+  isAdmin: boolean
+  needsPasswordChange?: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type CartItem = Product & {
+export interface CartItem extends Product {
   quantity: number
 }
 
-export type Order = {
+export interface Order {
   id: string
   userId: string
-  products: { productId: string; quantity: number; price: number }[]
+  products: CartItem[]
   total: number
-  status: "pending" | "completed" | "cancelled"
   paymentMethod: string
-  installments?: string
+  installments: string
   address: string
   couponCode?: string
-  createdAt: string
+  status: "pending" | "confirmed" | "delivered" | "cancelled"
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type Coupon = {
+export interface Coupon {
   id: string
   code: string
-  discount: number // percentage or fixed amount
+  discount: number
   type: "percentage" | "fixed"
-  expiresAt: string
   isActive: boolean
+  expiresAt?: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
-export type Webhook = {
+export interface WebhookConfig {
   id: string
-  event: string // e.g., 'order.created', 'product.updated'
   url: string
+  events: string[]
   isActive: boolean
-  secret?: string
+  createdAt: Date
+  updatedAt: Date
 }

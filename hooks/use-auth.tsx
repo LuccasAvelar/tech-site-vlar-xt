@@ -2,17 +2,18 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react"
-import type { User } from "@/types"
+import { createContext, useContext, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+
+interface User {
+  email: string
+}
 
 interface AuthContextType {
   user: User | null
-  loading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  register: (name: string, email: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
-  isAdmin: boolean
+  loading: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -22,110 +23,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const fetchUser = useCallback(async () => {
+  useEffect(() => {
+    checkAuth()
+  }, [])
+
+  const checkAuth = async () => {
     try {
       const response = await fetch("/api/auth/me")
       if (response.ok) {
-        const userData: User = await response.json()
-        setUser(userData)
-      } else {
-        setUser(null)
+        const data = await response.json()
+        if (data.authenticated) {
+          setUser(data.user)
+        }
       }
     } catch (error) {
-      console.error("Failed to fetch user:", error)
-      setUser(null)
+      console.error("Erro ao verificar autenticação:", error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
-  useEffect(() => {
-    fetchUser()
-  }, [fetchUser])
-
-  const login = async (email: string, password: string) => {
-    setLoading(true)
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       })
 
       if (response.ok) {
-        const userData: User = await response.json()
-        setUser(userData)
-        router.push("/") // Redirect to home or dashboard
+        setUser({ email })
         return true
-      } else {
-        const errorData = await response.json()
-        alert(errorData.message || "Login failed")
-        setUser(null)
-        return false
       }
-    } catch (error) {
-      console.error("Login error:", error)
-      alert("An unexpected error occurred during login.")
-      setUser(null)
       return false
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const register = async (name: string, email: string, password: string) => {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      })
-
-      if (response.ok) {
-        const userData: User = await response.json()
-        setUser(userData)
-        router.push("/") // Redirect to home or dashboard
-        return true
-      } else {
-        const errorData = await response.json()
-        alert(errorData.message || "Registration failed")
-        setUser(null)
-        return false
-      }
     } catch (error) {
-      console.error("Registration error:", error)
-      alert("An unexpected error occurred during registration.")
-      setUser(null)
+      console.error("Erro no login:", error)
       return false
-    } finally {
-      setLoading(false)
     }
   }
 
   const logout = async () => {
-    setLoading(true)
     try {
-      const response = await fetch("/api/auth/logout", { method: "POST" })
-      if (response.ok) {
-        setUser(null)
-        router.push("/login") // Redirect to login page
-      } else {
-        alert("Logout failed")
-      }
+      await fetch("/api/auth/logout", { method: "POST" })
+      setUser(null)
+      router.push("/login")
     } catch (error) {
-      console.error("Logout error:", error)
-      alert("An unexpected error occurred during logout.")
-    } finally {
-      setLoading(false)
+      console.error("Erro no logout:", error)
     }
   }
 
-  const isAdmin = user?.role === "admin"
-
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, isAdmin }}>{children}</AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

@@ -1,48 +1,76 @@
 "use client"
 
+import { useState } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
+import { ShoppingCart, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import type { Product } from "@/types"
-import { formatPrice } from "@/lib/utils"
-import { ShoppingCart } from "lucide-react"
 import { useCart } from "@/hooks/use-cart"
+import { formatPrice } from "@/lib/utils"
 
 interface ProductCardProps {
   product: Product
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false)
   const { addToCart } = useCart()
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700 flex flex-col h-full">
-      <div className="relative w-full h-48">
-        <Image
-          src={product.image || "/placeholder.png?height=200&width=200"}
-          alt={product.name}
-          fill
-          className="object-cover rounded-t-lg"
-        />
-      </div>
-      <CardContent className="p-4 flex-grow">
-        <h3 className="text-white text-lg font-semibold mb-2">{product.name}</h3>
-        <p className="text-gray-400 text-sm line-clamp-3 mb-4">{product.description}</p>
-        <div className="flex justify-between items-center">
-          <span className="text-cyan-400 font-bold text-xl">{formatPrice(product.price)}</span>
-          <span className="text-gray-500 text-sm">Estoque: {product.stock}</span>
+    <motion.div
+      whileHover={{ scale: 1.05, rotateY: 5 }}
+      transition={{ duration: 0.3 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+    >
+      <Card className="bg-gray-800/50 border-gray-700 overflow-hidden backdrop-blur-sm relative group">
+        <div className="relative aspect-square overflow-hidden">
+          <Image
+            src={product.image || "/placeholder.svg?height=300&width=300"}
+            alt={product.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+
+          <AnimatePresence>
+            {isHovered && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/80 flex items-center justify-center p-4"
+              >
+                <div className="text-center text-white">
+                  <p className="text-sm mb-4">{product.description}</p>
+                  <Button
+                    onClick={() => addToCart(product)}
+                    className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-500 hover:to-blue-600"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar ao Carrinho
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </CardContent>
-      <CardFooter className="p-4 pt-0">
-        <Button
-          className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-500 hover:to-blue-600"
-          onClick={() => addToCart(product)}
-          disabled={product.stock <= 0}
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          {product.stock > 0 ? "Adicionar ao Carrinho" : "Esgotado"}
-        </Button>
-      </CardFooter>
-    </Card>
+
+        <CardContent className="p-4">
+          <h3 className="text-white font-semibold mb-2 line-clamp-2">{product.name}</h3>
+          <div className="flex items-center justify-between">
+            <span className="text-2xl font-bold text-cyan-400">{formatPrice(product.price)}</span>
+            <Button
+              size="icon"
+              onClick={() => addToCart(product)}
+              className="bg-gray-700 hover:bg-cyan-400 hover:text-black transition-colors"
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

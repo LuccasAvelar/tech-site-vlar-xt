@@ -1,14 +1,27 @@
-# See https://nextjs.org/docs/basic-features/gitignore for more information.
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-.next/
-out/
-.env.local
-.env.*.local
-.env
-.DS_Store
-node_modules/
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-.vercel/
+
+# env files
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

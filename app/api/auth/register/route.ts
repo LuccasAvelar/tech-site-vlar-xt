@@ -1,45 +1,71 @@
-import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import { serialize } from "cookie"
+import { type NextRequest, NextResponse } from "next/server"
+import jwt from "jsonwebtoken"
+import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
+import { sql } from "@/lib/db"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key_here" // Use a strong secret in production
+const JWT_SECRET = process.env.JWT_SECRET || "tech-store-secret-key-2024"
 
-export async function POST(request: Request) {
-  const { name, email, password } = await request.json()
+export async function POST(request: NextRequest) {
+  try {
+    const { name, email, password, phone, birthDate } = await request.json()
 
-  if (!name || !email || !password) {
-    return NextResponse.json({ message: "Name, email, and password are required" }, { status: 400 })
+    // Verificar se email já existe
+    const existingUsers = await sql`
+      SELECT id FROM users WHERE email = ${email}
+    `
+
+    if (existingUsers.length > 0) {
+      return NextResponse.json({ error: "Email já cadastrado" }, { status: 400 })
+    }
+
+    // Hash da senha
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // Criar novo usuário
+    const result = await sql`
+      INSERT INTO users (name, email, password, phone, birth_date)
+      VALUES (${name}, ${email}, ${hashedPassword}, ${phone}, ${birthDate})
+      RETURNING id, name, email, phone, birth_date, is_admin, created_at, updated_at
+    `
+
+    const newUser = result[0]
+
+    // Criar fingerprint
+    const userAgent = request.headers.get("user-agent") || ""
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || ""
+    const fingerprint = Buffer.from(`${ip}:${userAgent}`).toString("base64")
+
+    // Criar JWT
+    const token = jwt.sign(
+      {
+        userId: newUser.id,
+        email: newUser.email,
+        fingerprint,
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" },
+    )
+
+    // Configurar cookies
+    const cookieStore = cookies()
+    cookieStore.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60,
+    })
+
+    cookieStore.set("fingerprint", fingerprint, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60,
+    })
+
+    return NextResponse.json(newUser, { status: 201 })
+  } catch (error) {
+    console.error("Erro no registro:", error)
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
   }
-
-  const existingUser = await db.users.findByEmail(email)
-  if (existingUser) {
-    return NextResponse.json({ message: "User with this email already exists" }, { status: 409 })
-  }
-
-  // In a real app, hash the password before saving
-  const newUser = await db.users.create({
-    name,
-    email,
-    password, // In a real app, this would be hashed
-    role: "user", // Default role for new registrations
-  })
-
-  // Simplified token generation (for mock purposes)
-  const tokenPayload = { id: newUser.id, email: newUser.email, role: newUser.role }
-  const token = btoa(JSON.stringify(tokenPayload)) // Base64 encode for simplicity
-
-  const cookie = serialize("token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 7, // 1 week
-    path: "/",
-  })
-
-  const { password: _, ...userWithoutPassword } = newUser // Exclude password from response
-
-  return NextResponse.json(userWithoutPassword, {
-    status: 201,
-    headers: { "Set-Cookie": cookie },
-  })
 }
