@@ -2,220 +2,279 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
-import { Plus, Trash2, Percent, DollarSign } from "lucide-react"
+import { useState, useEffect } from "react"
+import type { Coupon } from "@/types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Plus, Edit, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-
-interface Coupon {
-  id: string
-  code: string
-  discount: number
-  type: "percentage" | "fixed"
-  isActive: boolean
-  expiresAt?: string
-}
+import { Checkbox } from "@/components/ui/checkbox"
+import { formatPrice } from "@/lib/utils"
 
 export default function CouponManagement() {
   const [coupons, setCoupons] = useState<Coupon[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
+  const [form, setForm] = useState<Omit<Coupon, "id">>({
     code: "",
-    discount: "",
-    type: "percentage" as "percentage" | "fixed",
+    discount: 0,
+    type: "percentage",
     expiresAt: "",
+    isActive: true,
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  useEffect(() => {
+    fetchCoupons()
+  }, [])
 
-    const newCoupon: Coupon = {
-      id: Date.now().toString(),
-      code: formData.code.toUpperCase(),
-      discount: Number.parseFloat(formData.discount),
-      type: formData.type,
-      isActive: true,
-      expiresAt: formData.expiresAt || undefined,
+  const fetchCoupons = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch("/api/coupons") // Assuming /api/coupons route exists
+      const data = await response.json()
+      setCoupons(data)
+    } catch (error) {
+      console.error("Erro ao carregar cupons:", error)
+    } finally {
+      setLoading(false)
     }
+  }
 
-    setCoupons([...coupons, newCoupon])
-    setIsDialogOpen(false)
-    setFormData({
-      code: "",
-      discount: "",
-      type: "percentage",
-      expiresAt: "",
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : name === "discount" ? Number.parseFloat(value) : value,
+    }))
+  }
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSaveCoupon = async () => {
+    try {
+      let response
+      const payload = {
+        ...form,
+        expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
+      }
+
+      if (selectedCoupon) {
+        response = await fetch(`/api/coupons/${selectedCoupon.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      } else {
+        response = await fetch("/api/coupons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+      }
+
+      if (response.ok) {
+        await fetchCoupons()
+        setIsDialogOpen(false)
+        setSelectedCoupon(null)
+        setForm({ code: "", discount: 0, type: "percentage", expiresAt: "", isActive: true })
+      } else {
+        const errorData = await response.json()
+        alert(`Erro ao salvar cupom: ${errorData.message}`)
+      }
+    } catch (error) {
+      console.error("Erro ao salvar cupom:", error)
+      alert("Erro inesperado ao salvar cupom.")
+    }
+  }
+
+  const handleDeleteCoupon = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este cupom?")) return
+
+    try {
+      const response = await fetch(`/api/coupons/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        await fetchCoupons()
+      } else {
+        const errorData = await response.json()
+        alert(`Erro ao excluir cupom: ${errorData.message}`)
+      }
+    } catch (error) {
+      console.error("Erro ao excluir cupom:", error)
+      alert("Erro inesperado ao excluir cupom.")
+    }
+  }
+
+  const openDialogForCreate = () => {
+    setSelectedCoupon(null)
+    setForm({ code: "", discount: 0, type: "percentage", expiresAt: "", isActive: true })
+    setIsDialogOpen(true)
+  }
+
+  const openDialogForEdit = (coupon: Coupon) => {
+    setSelectedCoupon(coupon)
+    setForm({
+      code: coupon.code,
+      discount: coupon.discount,
+      type: coupon.type,
+      expiresAt: coupon.expiresAt ? new Date(coupon.expiresAt).toISOString().split("T")[0] : "", // Format for input type="date"
+      isActive: coupon.isActive,
     })
+    setIsDialogOpen(true)
   }
 
-  const handleDelete = (couponId: string) => {
-    setCoupons(coupons.filter((c) => c.id !== couponId))
-  }
-
-  const toggleActive = (couponId: string) => {
-    setCoupons(coupons.map((c) => (c.id === couponId ? { ...c, isActive: !c.isActive } : c)))
+  if (loading) {
+    return <div className="text-white text-center py-8">Carregando cupons...</div>
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white">Gerenciar Cupons</h2>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-500 hover:to-blue-600">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Cupom
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white">
-            <DialogHeader>
-              <DialogTitle>Criar Novo Cupom</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="code">Código do Cupom</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="bg-gray-700 border-gray-600"
-                  placeholder="DESCONTO10"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="discount">Desconto</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    step="0.01"
-                    value={formData.discount}
-                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                    className="bg-gray-700 border-gray-600"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="type">Tipo</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value: "percentage" | "fixed") => setFormData({ ...formData, type: value })}
-                  >
-                    <SelectTrigger className="bg-gray-700 border-gray-600">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      <SelectItem value="percentage">Porcentagem (%)</SelectItem>
-                      <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="expiresAt">Data de Expiração (Opcional)</Label>
-                <Input
-                  id="expiresAt"
-                  type="date"
-                  value={formData.expiresAt}
-                  onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-                  className="bg-gray-700 border-gray-600"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  className="border-gray-600"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black hover:from-cyan-500 hover:to-blue-600"
-                >
-                  Criar Cupom
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <h2 className="text-2xl font-bold text-white">Gerenciamento de Cupons</h2>
+        <Button onClick={openDialogForCreate} className="bg-cyan-500 hover:bg-cyan-600 text-black">
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Cupom
+        </Button>
       </div>
 
-      {coupons.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-semibold text-white mb-4">Nenhum cupom criado</h3>
-          <p className="text-gray-400">Crie cupons de desconto para seus clientes</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coupons.map((coupon, index) => (
-            <motion.div
-              key={coupon.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className="bg-gray-800/50 border-gray-700">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-white text-lg">{coupon.code}</CardTitle>
-                    <Badge variant={coupon.isActive ? "default" : "secondary"}>
-                      {coupon.isActive ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-cyan-400 font-bold text-xl">
-                      {coupon.type === "percentage" ? (
-                        <Percent className="h-5 w-5 mr-1" />
-                      ) : (
-                        <DollarSign className="h-5 w-5 mr-1" />
-                      )}
-                      {coupon.discount}
-                      {coupon.type === "percentage" ? "%" : ""}
-                    </div>
-                    {coupon.expiresAt && (
-                      <p className="text-gray-400 text-sm">
-                        Expira em: {new Date(coupon.expiresAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex space-x-2 mt-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toggleActive(coupon.id)}
-                      className="border-gray-600"
-                    >
-                      {coupon.isActive ? "Desativar" : "Ativar"}
+      <div className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-700/70">
+              <TableHead className="text-gray-300">Código</TableHead>
+              <TableHead className="text-gray-300">Desconto</TableHead>
+              <TableHead className="text-gray-300">Tipo</TableHead>
+              <TableHead className="text-gray-300">Expira Em</TableHead>
+              <TableHead className="text-gray-300">Ativo</TableHead>
+              <TableHead className="text-gray-300 text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {coupons.map((coupon) => (
+              <TableRow key={coupon.id} className="border-gray-700 hover:bg-gray-700/30">
+                <TableCell className="font-medium text-white">{coupon.code}</TableCell>
+                <TableCell className="text-cyan-400">
+                  {coupon.type === "percentage" ? `${coupon.discount}%` : formatPrice(coupon.discount)}
+                </TableCell>
+                <TableCell className="text-gray-400">{coupon.type}</TableCell>
+                <TableCell className="text-gray-400">
+                  {coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString() : "Nunca"}
+                </TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-semibold ${coupon.isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}
+                  >
+                    {coupon.isActive ? "Sim" : "Não"}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="ghost" size="icon" onClick={() => openDialogForEdit(coupon)}>
+                      <Edit className="h-4 w-4 text-blue-400" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(coupon.id)}
-                      className="border-red-600 text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteCoupon(coupon.id)}>
+                      <Trash2 className="h-4 w-4 text-red-400" />
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white">{selectedCoupon ? "Editar Cupom" : "Adicionar Novo Cupom"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="code" className="text-gray-300">
+                Código
+              </Label>
+              <Input
+                id="code"
+                name="code"
+                value={form.code}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="discount" className="text-gray-300">
+                Desconto
+              </Label>
+              <Input
+                id="discount"
+                name="discount"
+                type="number"
+                step="0.01"
+                value={form.discount}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type" className="text-gray-300">
+                Tipo
+              </Label>
+              <Select value={form.type} onValueChange={(value) => handleSelectChange("type", value)}>
+                <SelectTrigger id="type" className="bg-gray-800 border-gray-700 text-white">
+                  <SelectValue placeholder="Selecione o Tipo" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                  <SelectItem value="percentage">Porcentagem</SelectItem>
+                  <SelectItem value="fixed">Valor Fixo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expiresAt" className="text-gray-300">
+                Expira Em
+              </Label>
+              <Input
+                id="expiresAt"
+                name="expiresAt"
+                type="date"
+                value={form.expiresAt}
+                onChange={handleInputChange}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isActive"
+                name="isActive"
+                checked={form.isActive}
+                onCheckedChange={(checked) => setForm((prev) => ({ ...prev, isActive: checked as boolean }))}
+              />
+              <Label htmlFor="isActive" className="text-gray-300">
+                Ativo
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-gray-600 text-gray-300">
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveCoupon} className="bg-cyan-500 hover:bg-cyan-600 text-black">
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

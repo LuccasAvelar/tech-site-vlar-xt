@@ -1,27 +1,24 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
+import type { Product } from "@/types"
 
 export async function GET() {
   try {
     const products = await db.products.findMany()
-    return NextResponse.json(products)
+    return NextResponse.json(products, { status: 200 })
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar produtos" }, { status: 500 })
+    console.error("Error fetching products:", error)
+    return NextResponse.json({ message: "Failed to fetch products" }, { status: 500 })
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    // Check authentication
-    const authCookie = req.cookies.get("admin-auth")
-    if (authCookie?.value !== "authenticated") {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
-    }
-
-    const data = await req.json()
-    const product = await db.products.create(data)
-    return NextResponse.json(product)
+    const productData: Omit<Product, "id"> = await request.json()
+    const newProduct = await db.products.create(productData)
+    return NextResponse.json(newProduct, { status: 201 })
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao criar produto" }, { status: 500 })
+    console.error("Error creating product:", error)
+    return NextResponse.json({ message: "Failed to create product" }, { status: 500 })
   }
 }

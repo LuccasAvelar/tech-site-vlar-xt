@@ -1,55 +1,49 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
+import type { Product } from "@/types"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
-    const product = await db.products.findById(params.id)
+    const { id } = params
+    const product = await db.products.findUnique(id)
+
     if (!product) {
-      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 })
+      return NextResponse.json({ message: "Product not found" }, { status: 404 })
     }
-    return NextResponse.json(product)
+    return NextResponse.json(product, { status: 200 })
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao buscar produto" }, { status: 500 })
+    console.error("Error fetching product:", error)
+    return NextResponse.json({ message: "Failed to fetch product" }, { status: 500 })
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    // Check authentication
-    const authCookie = req.cookies.get("admin-auth")
-    if (authCookie?.value !== "authenticated") {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    const { id } = params
+    const productData: Partial<Product> = await request.json()
+    const updatedProduct = await db.products.update(id, productData)
+
+    if (!updatedProduct) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 })
     }
-
-    const data = await req.json()
-    const product = await db.products.update(params.id, data)
-
-    if (!product) {
-      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 })
-    }
-
-    return NextResponse.json(product)
+    return NextResponse.json(updatedProduct, { status: 200 })
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao atualizar produto" }, { status: 500 })
+    console.error("Error updating product:", error)
+    return NextResponse.json({ message: "Failed to update product" }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    // Check authentication
-    const authCookie = req.cookies.get("admin-auth")
-    if (authCookie?.value !== "authenticated") {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 })
+    const { id } = params
+    const deletedProduct = await db.products.delete(id)
+
+    if (!deletedProduct) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 })
     }
-
-    const success = await db.products.delete(params.id)
-
-    if (!success) {
-      return NextResponse.json({ error: "Produto não encontrado" }, { status: 404 })
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ message: "Product deleted successfully" }, { status: 200 })
   } catch (error) {
-    return NextResponse.json({ error: "Erro ao deletar produto" }, { status: 500 })
+    console.error("Error deleting product:", error)
+    return NextResponse.json({ message: "Failed to delete product" }, { status: 500 })
   }
 }

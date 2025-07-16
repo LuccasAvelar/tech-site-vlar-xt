@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server"
+import { serialize } from "cookie"
 
 export async function POST() {
-  const response = NextResponse.json({ success: true })
-
-  // Remove auth cookie
-  response.cookies.set("admin-auth", "", {
+  const cookie = serialize("token", "", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
+    sameSite: "strict",
+    maxAge: 0, // Expire the cookie immediately
+    path: "/",
   })
 
-  return response
+  return NextResponse.json(
+    { message: "Logged out successfully" },
+    {
+      status: 200,
+      headers: { "Set-Cookie": cookie },
+    },
+  )
 }

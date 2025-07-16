@@ -1,4 +1,4 @@
-import { sql } from "../lib/db"
+import { sql, resetMockDb } from "../lib/db"
 
 async function initDatabase() {
   try {
@@ -53,7 +53,7 @@ async function initDatabase() {
           price: 2499.99,
           category: "Smartphones",
           stock: 15,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
         {
           name: "Notebook Gamer Ultra",
@@ -61,7 +61,7 @@ async function initDatabase() {
           price: 4999.99,
           category: "Notebooks",
           stock: 8,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
         {
           name: "Fone Bluetooth Premium",
@@ -69,7 +69,7 @@ async function initDatabase() {
           price: 599.99,
           category: "Áudio",
           stock: 25,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
         {
           name: 'Smart TV 4K 55"',
@@ -77,7 +77,7 @@ async function initDatabase() {
           price: 2199.99,
           category: "TVs",
           stock: 12,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
         {
           name: "Console Next-Gen",
@@ -85,7 +85,7 @@ async function initDatabase() {
           price: 3499.99,
           category: "Games",
           stock: 6,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
         {
           name: 'Tablet Pro 12"',
@@ -93,7 +93,7 @@ async function initDatabase() {
           price: 1899.99,
           category: "Tablets",
           stock: 10,
-          image: "/placeholder.svg?height=300&width=300",
+          image: "/placeholder.png?height=300&width=300",
         },
       ]
 
@@ -121,4 +121,11 @@ async function initDatabase() {
   }
 }
 
-initDatabase()
+async function initDb() {
+  console.log("Initializing mock database...")
+  resetMockDb()
+  console.log("Mock database initialized successfully.")
+}
+
+initDb().catch(console.error)
+initDatabase().catch(console.error)

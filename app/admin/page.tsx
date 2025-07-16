@@ -1,127 +1,107 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useAuth } from "@/hooks/use-auth"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react"
+import { motion } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ProductManagement } from "@/components/admin/product-management"
-import { OrderManagement } from "@/components/admin/order-management"
-import { LogOut, Package, ShoppingCart, Users, DollarSign } from "lucide-react"
+import Header from "@/components/header"
+import ProductManagement from "@/components/admin/product-management"
+import OrderManagement from "@/components/admin/order-management"
+import UserManagement from "@/components/admin/user-management"
+import CouponManagement from "@/components/admin/coupon-management"
+import WebhookManagement from "@/components/admin/webhook-management"
+import { useAuth } from "@/hooks/use-auth"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 export default function AdminPage() {
-  const { user, logout } = useAuth()
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    activeUsers: 0,
-  })
+  const { user, loading, isAdmin } = useAuth()
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState("products")
 
   useEffect(() => {
-    loadStats()
-  }, [])
-
-  const loadStats = async () => {
-    try {
-      const [productsRes, ordersRes] = await Promise.all([fetch("/api/products"), fetch("/api/orders")])
-
-      if (productsRes.ok && ordersRes.ok) {
-        const products = await productsRes.json()
-        const orders = await ordersRes.json()
-
-        setStats({
-          totalProducts: products.length,
-          totalOrders: orders.length,
-          totalRevenue: orders.reduce((sum: number, order: any) => sum + order.total, 0),
-          activeUsers: 150, // Mock data
-        })
-      }
-    } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error)
+    if (!loading && !isAdmin) {
+      router.push("/") // Redirect non-admins to home page
     }
+  }, [loading, isAdmin, router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-400"></div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return null // Or a message like "Access Denied"
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Painel Admin</h1>
-              <p className="text-gray-600">Bem-vindo, {user?.email}</p>
-            </div>
-            <Button onClick={logout} variant="outline">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
+      <Header />
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Produtos</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalProducts}</div>
-              </CardContent>
-            </Card>
+      <main className="container mx-auto px-4 py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent mb-4">
+            Painel Administrativo
+          </h1>
+          <p className="text-gray-300 text-xl">Gerencie sua loja TechStore</p>
+        </motion.div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalOrders}</div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  R$ {stats.totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Usuários Ativos</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.activeUsers}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Management Tabs */}
-          <Tabs defaultValue="products" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="products">Produtos</TabsTrigger>
-              <TabsTrigger value="orders">Pedidos</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="products">
-              <ProductManagement />
-            </TabsContent>
-
-            <TabsContent value="orders">
-              <OrderManagement />
-            </TabsContent>
-          </Tabs>
-        </div>
+        <Tabs defaultValue="products" className="w-full" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 bg-gray-800/50 border-gray-700">
+            <TabsTrigger
+              value="products"
+              className="text-gray-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
+            >
+              Produtos
+            </TabsTrigger>
+            <TabsTrigger
+              value="orders"
+              className="text-gray-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
+            >
+              Pedidos
+            </TabsTrigger>
+            <TabsTrigger
+              value="users"
+              className="text-gray-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
+            >
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger
+              value="coupons"
+              className="text-gray-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
+            >
+              Cupons
+            </TabsTrigger>
+            <TabsTrigger
+              value="webhooks"
+              className="text-gray-300 data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
+            >
+              Webhooks
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="products" className="mt-6">
+            <ProductManagement />
+          </TabsContent>
+          <TabsContent value="orders" className="mt-6">
+            <OrderManagement />
+          </TabsContent>
+          <TabsContent value="users" className="mt-6">
+            <UserManagement />
+          </TabsContent>
+          <TabsContent value="coupons" className="mt-6">
+            <CouponManagement />
+          </TabsContent>
+          <TabsContent value="webhooks" className="mt-6">
+            <WebhookManagement />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   )
